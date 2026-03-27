@@ -3,114 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>極簡記帳</title>
+    <title>專業記帳 PWA</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { -webkit-tap-highlight-color: transparent; }
-        .safe-area { padding-bottom: env(safe-area-inset-bottom); }
+        body { -webkit-tap-highlight-color: transparent; padding-bottom: 100px; }
+        .active-tab { background-color: #3b82f6 !important; color: white !important; }
     </style>
 </head>
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="極簡記帳">
+<body class="bg-slate-50 font-sans text-slate-900">
 
-<body class="bg-gray-50 font-sans text-gray-900">
-
-    <div class="max-w-md mx-auto min-h-screen flex flex-col p-6">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-blue-600">我的帳本</h1>
-            <p id="totalDisplay" class="text-lg text-gray-500">本月總計: $0</p>
+    <div class="max-w-md mx-auto p-4">
+        <header class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-blue-600 text-white p-4 rounded-2xl shadow-lg">
+                <p class="text-xs opacity-80">銀行餘額</p>
+                <p class="text-xl font-bold" id="bankBal">$0</p>
+            </div>
+            <div class="bg-orange-500 text-white p-4 rounded-2xl shadow-lg">
+                <p class="text-xs opacity-80">八達通餘額</p>
+                <p class="text-xl font-bold" id="octopusBal">$0</p>
+            </div>
         </header>
 
-        <section class="bg-white p-6 rounded-3xl shadow-sm mb-8">
+        <section class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-6">
             <div class="space-y-4">
-                <input type="number" id="amount" placeholder="輸入金額" class="w-full text-2xl p-3 border-b-2 border-gray-100 focus:border-blue-500 outline-none transition-all">
+                <input type="number" id="amount" placeholder="HKD $0.00" class="w-full text-3xl font-bold p-2 text-center outline-none border-b-2 border-slate-50 focus:border-blue-400">
                 
-                <div class="flex gap-2 overflow-x-auto py-2">
-                    <button onclick="setCategory('飲食')" class="cate-btn bg-gray-100 px-4 py-2 rounded-full whitespace-nowrap">🍱 飲食</button>
-                    <button onclick="setCategory('交通')" class="cate-btn bg-gray-100 px-4 py-2 rounded-full whitespace-nowrap">🚗 交通</button>
-                    <button onclick="setCategory('娛樂')" class="cate-btn bg-gray-100 px-4 py-2 rounded-full whitespace-nowrap">🎮 娛樂</button>
-                    <button onclick="setCategory('其他')" class="cate-btn bg-gray-100 px-4 py-2 rounded-full whitespace-nowrap">✨ 其他</button>
+                <div>
+                    <p class="text-sm text-slate-400 mb-2">類別</p>
+                    <div class="flex gap-2 overflow-x-auto pb-2" id="mainCatGroup">
+                        <button onclick="setMainCat('飲食')" class="main-cat active-tab bg-slate-100 px-4 py-2 rounded-xl whitespace-nowrap">🍱 飲食</button>
+                        <button onclick="setMainCat('交通')" class="main-cat bg-slate-100 px-4 py-2 rounded-xl whitespace-nowrap">🚗 交通</button>
+                        <button onclick="setMainCat('增值')" class="main-cat bg-slate-100 px-4 py-2 rounded-xl whitespace-nowrap">💰 增值</button>
+                    </div>
                 </div>
 
-                <button onclick="addRecord()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">儲存紀錄</button>
+                <div id="subCatContainer">
+                    <p class="text-sm text-slate-400 mb-2">細項</p>
+                    <div class="flex gap-2 overflow-x-auto pb-2" id="subCatGroup"></div>
+                </div>
+
+                <div id="paymentContainer">
+                    <p class="text-sm text-slate-400 mb-2">付款方式</p>
+                    <div class="flex gap-2 overflow-x-auto pb-2" id="payMethodGroup">
+                        <button onclick="setPayMethod('Apple Pay')" class="pay-method active-tab bg-slate-100 px-4 py-2 rounded-xl whitespace-nowrap"> Apple Pay</button>
+                        <button onclick="setPayMethod('八達通')" class="pay-method bg-slate-100 px-4 py-2 rounded-xl whitespace-nowrap">💳 八達通</button>
+                        <button onclick="setPayMethod('銀行轉帳')" class="pay-method bg-slate-100 px-4 py-2 rounded-xl whitespace-nowrap">🏦 銀行</button>
+                    </div>
+                </div>
+
+                <button onclick="submitRecord()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl active:bg-slate-700 transition-colors">儲存交易</button>
             </div>
         </section>
 
-        <section class="flex-1">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700">最近支出</h2>
-            <div id="history" class="space-y-3">
-                </div>
+        <section>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">歷史紀錄</h2>
+                <button onclick="resetData()" class="text-xs text-red-400">重設所有資料</button>
+            </div>
+            <div id="historyList" class="space-y-3"></div>
         </section>
-
-        <footer class="mt-8 text-center text-gray-400 text-sm safe-area">
-            資料儲存於手機瀏覽器緩存
-        </footer>
     </div>
 
     <script>
-        let selectedCategory = '其他';
-        let records = JSON.parse(localStorage.getItem('myExpenses')) || [];
+        // 資料結構
+        let data = JSON.parse(localStorage.getItem('myFinanceData')) || {
+            bank: 10000,
+            octopus: 200,
+            records: []
+        };
 
-        function setCategory(cat) {
-            selectedCategory = cat;
-            document.querySelectorAll('.cate-btn').forEach(btn => {
-                btn.classList.replace('bg-blue-500', 'bg-gray-100');
-                btn.classList.replace('text-white', 'text-gray-900');
-            });
-            event.target.classList.replace('bg-gray-100', 'bg-blue-500');
-            event.target.classList.add('text-white');
+        const config = {
+            '飲食': ['早餐', '午餐', '下午茶', '晚餐', '零食'],
+            '交通': ['巴士/地鐵', '的士', '泊車'],
+            '增值': ['八達通增值', '存入銀行']
+        };
+
+        let current = { main: '飲食', sub: '早餐', pay: 'Apple Pay' };
+
+        function setMainCat(cat) {
+            current.main = cat;
+            updateUI();
+            // 自動選取第一個子類
+            current.sub = config[cat][0];
+            renderSubCats();
         }
 
-        function addRecord() {
-            const amountInput = document.getElementById('amount');
-            const amount = amountInput.value;
-            if (!amount) return alert('請輸入金額');
+        function renderSubCats() {
+            const group = document.getElementById('subCatGroup');
+            group.innerHTML = config[current.main].map(s => 
+                `<button onclick="current.sub='${s}';renderSubCats();" class="px-4 py-2 rounded-xl whitespace-nowrap ${current.sub===s?'active-tab':'bg-slate-100'}">${s}</button>`
+            ).join('');
+        }
 
-            const record = {
+        function setPayMethod(m) {
+            current.pay = m;
+            updateUI();
+        }
+
+        function updateUI() {
+            document.querySelectorAll('.main-cat').forEach(b => b.classList.toggle('active-tab', b.innerText.includes(current.main)));
+            document.querySelectorAll('.pay-method').forEach(b => b.classList.toggle('active-tab', b.innerText.includes(current.pay)));
+            document.getElementById('bankBal').innerText = `$${data.bank.toFixed(1)}`;
+            document.getElementById('octopusBal').innerText = `$${data.octopus.toFixed(1)}`;
+        }
+
+        function submitRecord() {
+            const amt = parseFloat(document.getElementById('amount').value);
+            if (!amt) return;
+
+            // 邏輯處理
+            if (current.main === '增值' && current.sub === '八達通增值') {
+                data.bank -= amt;
+                data.octopus += amt;
+            } else {
+                // 一般支出
+                if (current.pay === '八達通') data.octopus -= amt;
+                else data.bank -= amt;
+            }
+
+            data.records.unshift({
                 id: Date.now(),
-                amount: parseFloat(amount),
-                category: selectedCategory,
-                date: new Date().toLocaleDateString()
-            };
+                ...current,
+                amount: amt,
+                time: new Date().toLocaleString('zh-HK', {hour12:false})
+            });
 
-            records.unshift(record);
-            saveAndRender();
-            amountInput.value = '';
+            save();
+            document.getElementById('amount').value = '';
+            renderHistory();
         }
 
-        function deleteRecord(id) {
-            records = records.filter(r => r.id !== id);
-            saveAndRender();
-        }
-
-        function saveAndRender() {
-            localStorage.setItem('myExpenses', JSON.stringify(records));
-            const historyDiv = document.getElementById('history');
-            const totalDisplay = document.getElementById('totalDisplay');
-            
-            let total = 0;
-            historyDiv.innerHTML = records.map(r => {
-                total += r.amount;
-                return `
-                    <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
-                        <div>
-                            <p class="font-bold text-gray-800">${r.category}</p>
-                            <p class="text-xs text-gray-400">${r.date}</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="text-lg font-bold text-red-500">-$${r.amount}</span>
-                            <button onclick="deleteRecord(${r.id})" class="text-gray-300 hover:text-red-400">✕</button>
-                        </div>
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = data.records.map(r => `
+                <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                    <div>
+                        <div class="font-bold">${r.main} - ${r.sub}</div>
+                        <div class="text-xs text-slate-400">${r.time} · ${r.pay}</div>
                     </div>
-                `;
-            }).join('');
-            
-            totalDisplay.innerText = `本月總計: $${total}`;
+                    <div class="text-right">
+                        <div class="${r.main==='增值'?'text-green-500':'text-red-500'} font-bold">
+                            ${r.main==='增值'?'+':'-'}$${r.amount}
+                        </div>
+                        <button onclick="deleteRec(${r.id})" class="text-[10px] text-slate-300">刪除</button>
+                    </div>
+                </div>
+            `).join('');
+            updateUI();
         }
 
-        // 初始化渲染
-        saveAndRender();
+        function save() { localStorage.setItem('myFinanceData', JSON.stringify(data)); }
+        function deleteRec(id) {
+            data.records = data.records.filter(r => r.id !== id);
+            save(); renderHistory();
+        }
+        function resetData() {
+            if(confirm('確定清除所有紀錄？')) {
+                data = { bank: 0, octopus: 0, records: [] };
+                save(); renderHistory();
+            }
+        }
+
+        // Init
+        renderSubCats();
+        renderHistory();
     </script>
 </body>
 </html>
