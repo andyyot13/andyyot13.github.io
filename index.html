@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>極簡記帳</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .safe-area { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900">
+
+    <div class="max-w-md mx-auto min-h-screen flex flex-col p-6">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-blue-600">我的帳本</h1>
+            <p id="totalDisplay" class="text-lg text-gray-500">本月總計: $0</p>
+        </header>
+
+        <section class="bg-white p-6 rounded-3xl shadow-sm mb-8">
+            <div class="space-y-4">
+                <input type="number" id="amount" placeholder="輸入金額" class="w-full text-2xl p-3 border-b-2 border-gray-100 focus:border-blue-500 outline-none transition-all">
+                
+                <div class="flex gap-2 overflow-x-auto py-2">
+                    <button onclick="setCategory('飲食')" class="cate-btn bg-gray-100 px-4 py-2 rounded-full whitespace-nowrap">🍱 飲食</button>
+                    <button onclick="setCategory('交通')" class="cate-btn bg-gray-100 px-4 py-2 rounded-full whitespace-nowrap">🚗 交通</button>
+                    <button onclick="setCategory('娛樂')" class="cate-btn bg-gray-100 px-4 py-2 rounded-full whitespace-nowrap">🎮 娛樂</button>
+                    <button onclick="setCategory('其他')" class="cate-btn bg-gray-100 px-4 py-2 rounded-full whitespace-nowrap">✨ 其他</button>
+                </div>
+
+                <button onclick="addRecord()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">儲存紀錄</button>
+            </div>
+        </section>
+
+        <section class="flex-1">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">最近支出</h2>
+            <div id="history" class="space-y-3">
+                </div>
+        </section>
+
+        <footer class="mt-8 text-center text-gray-400 text-sm safe-area">
+            資料儲存於手機瀏覽器緩存
+        </footer>
+    </div>
+
+    <script>
+        let selectedCategory = '其他';
+        let records = JSON.parse(localStorage.getItem('myExpenses')) || [];
+
+        function setCategory(cat) {
+            selectedCategory = cat;
+            document.querySelectorAll('.cate-btn').forEach(btn => {
+                btn.classList.replace('bg-blue-500', 'bg-gray-100');
+                btn.classList.replace('text-white', 'text-gray-900');
+            });
+            event.target.classList.replace('bg-gray-100', 'bg-blue-500');
+            event.target.classList.add('text-white');
+        }
+
+        function addRecord() {
+            const amountInput = document.getElementById('amount');
+            const amount = amountInput.value;
+            if (!amount) return alert('請輸入金額');
+
+            const record = {
+                id: Date.now(),
+                amount: parseFloat(amount),
+                category: selectedCategory,
+                date: new Date().toLocaleDateString()
+            };
+
+            records.unshift(record);
+            saveAndRender();
+            amountInput.value = '';
+        }
+
+        function deleteRecord(id) {
+            records = records.filter(r => r.id !== id);
+            saveAndRender();
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('myExpenses', JSON.stringify(records));
+            const historyDiv = document.getElementById('history');
+            const totalDisplay = document.getElementById('totalDisplay');
+            
+            let total = 0;
+            historyDiv.innerHTML = records.map(r => {
+                total += r.amount;
+                return `
+                    <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
+                        <div>
+                            <p class="font-bold text-gray-800">${r.category}</p>
+                            <p class="text-xs text-gray-400">${r.date}</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-lg font-bold text-red-500">-$${r.amount}</span>
+                            <button onclick="deleteRecord(${r.id})" class="text-gray-300 hover:text-red-400">✕</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            totalDisplay.innerText = `本月總計: $${total}`;
+        }
+
+        // 初始化渲染
+        saveAndRender();
+    </script>
+</body>
+</html>
